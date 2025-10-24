@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VUE ET HISTOIRE - The Vibe Check is In</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configure Tailwind for new Aesthetic Blue/Dark colors and font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'cz-dark': '#111827', // Slate/Charcoal dark background (Kept)
+                        'cz-light': '#f9fafb', // Near white text (Kept)
+                        'cz-accent': '#08A0F7', // Deep Sapphire Blue (NEW CHARISMATIC COLOR)
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'], 
+                    },
+                    spacing: {
+                        '128': '32rem',
+                    }
+                },
+            }
+        }
+    </script>
+    
+    <style>
+        /* Base styles */
+        body {
+            background-color: #111827;
+            color: #f9fafb;
+        }
+
+        /* Style for the underline effect on links (updated color) */
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px; /* Thicker line */
+            display: block;
+            margin-top: 2px;
+            left: 0;
+            background: #08A0F7; /* New Accent Color */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Interactive Button Styles (Updated colors and style) */
+        .cta-button {
+            background-color: #08A0F7; /* New Accent Color */
+            color: #111827;
+            font-weight: 700;
+            border-radius: 9999px; /* Pill shape (Kept) */
+            padding: 1rem 2rem;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 20px rgba(8, 160, 247, 0.4); /* Updated Shadow */
+        }
+        .cta-button:hover {
+            background-color: #47B3FF; /* Lighter Blue on hover */
+            box-shadow: 0 6px 25px rgba(8, 160, 247, 0.6); /* Updated Shadow */
+            transform: translateY(-2px);
+        }
+        .cta-button:active {
+            background-color: #0080CC; /* Darker Blue on click */
+            box-shadow: 0 2px 10px rgba(8, 160, 247, 0.5); /* Updated Shadow */
+            transform: translateY(0);
+        }
+
+        /* Header Motto Style */
+        .header-motto {
+            text-shadow: 0 0 10px rgba(8, 160, 247, 0.7); /* Updated Shadow */
+        }
+
+        /* Modal/Message Box Styles */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-cz-dark text-cz-light font-sans antialiased min-h-screen">
+
+    <!-- Firebase Imports (MUST be type="module") -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Variables (REQUIRED)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db;
+        let auth;
+        let userId = 'anonymous'; // Default user ID
+        
+        // Use a UUID polyfill if crypto.randomUUID is not available (for anonymous users)
+        const getUserId = () => auth.currentUser?.uid || (typeof crypto !== 'undefined' && crypto.randomUUID) || ('anon-' + Math.random().toString(36).substr(2, 9));
+
+
+        // --- FIREBASE INITIALIZATION ---
+        const initFirebase = async () => {
+            try {
+                // setLogLevel('Debug'); // Enable for detailed debugging
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Attempt to sign in with custom token, fallback to anonymous sign-in
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                userId = getUserId();
+                console.log("Firebase initialized. User ID:", userId);
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                // Display error message
+                showMessage('Firebase failed to initialize. Data saving disabled.', 'error');
+            }
+        };
+
+        // --- MESSAGE BOX UTILITY ---
+        const showMessage = (message, type = 'success', duration = 3000) => {
+            const messageBox = document.getElementById('message-box');
+            if (!messageBox) return;
+
+            messageBox.innerHTML = `
+                <div class="p-4 rounded-xl shadow-2xl font-semibold transition-opacity duration-300 ${type === 'success' ? 'bg-cz-accent text-cz-dark' : 'bg-red-600 text-cz-light'}">
+                    ${message}
+                </div>
+            `;
+            messageBox.classList.remove('hidden', 'opacity-0');
+            messageBox.classList.add('opacity-100');
+
+            setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0');
+                setTimeout(() => messageBox.classList.add('hidden'), 300);
+            }, duration);
+        };
+
+        // --- FORM SUBMISSION HANDLER ---
+        const handleSignup = async (event) => {
+            event.preventDefault();
+            
+            const form = event.target;
+            const emailInput = form.querySelector('input[type="email"]');
+            const email = emailInput.value.trim();
+
+            if (!email) {
+                showMessage('Please enter a valid email address.', 'error');
+                return;
+            }
+
+            if (!db) {
+                 showMessage('Database not ready. Please try again later.', 'error');
+                 return;
+            }
+
+            const button = form.querySelector('.cta-button');
+            const originalText = button.innerHTML;
+            button.innerHTML = 'SAVING...';
+            button.disabled = true;
+
+            try {
+                // Firestore path: /artifacts/{appId}/users/{userId}/newsletter_signups
+                const collectionPath = `artifacts/${appId}/users/${userId}/newsletter_signups`;
+                const signupsCollection = collection(db, collectionPath);
+                
+                // Use the email as the document ID for easy deduplication
+                const docRef = doc(db, collectionPath, email);
+
+                await setDoc(docRef, {
+                    email: email,
+                    signedUpAt: new Date().toISOString(),
+                    // Optionally store the anonymous user ID
+                    anonymousId: userId 
+                });
+                
+                showMessage('Email Saved! You are now on the exclusive list.', 'success');
+                emailInput.value = ''; // Clear the input
+
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showMessage('An error occurred during signup. Check console for details.', 'error');
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        };
+        
+        // Initialize Firebase on window load
+        window.addEventListener('load', initFirebase);
+
+        // Attach event listener to the form after the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const signupForm = document.querySelector('.max-w-md form');
+            if (signupForm) {
+                signupForm.addEventListener('submit', handleSignup);
+            }
+        });
+
+    </script>
+
+
+    <!-- Message Box (Hidden by default) -->
+    <div id="message-box" class="hidden opacity-0 message-box transition-all duration-300"></div>
+
+    <!-- Header / Navigation -->
+    <header class="sticky top-0 z-10 bg-cz-dark/90 backdrop-blur-sm shadow-xl shadow-black/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <!-- Logo / Brand Motto (Updated to the new slogan) -->
+            <div class="text-xl sm:text-2xl font-black tracking-tighter text-cz-accent uppercase header-motto">
+                LE STYLE EST À LA PORTÉE DE TOUS
+            </div>
+            <!-- Navigation Links (Hidden on small screens, minimalist design) -->
+            <nav class="hidden md:flex space-x-8 text-sm font-semibold">
+                <a href="#vision" class="nav-link hover:text-cz-accent">The Vibe</a>
+                <a href="#collection" class="nav-link hover:text-cz-accent">The Drop</a>
+                <a href="#contact" class="nav-link hover:text-cz-accent">Slide Into DMs</a>
+            </nav>
+            <!-- Mobile Menu Placeholder -->
+            <button class="md:hidden text-cz-light focus:outline-none" onclick="toggleMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-cz-dark py-2">
+            <a href="#vision" class="block px-4 py-2 text-sm hover:bg-cz-dark/50">The Vibe</a>
+            <a href="#collection" class="block px-4 py-2 text-sm hover:bg-cz-dark/50">The Drop</a>
+            <a href="#contact" class="block px-4 py-2 text-sm hover:bg-cz-dark/50">Slide Into DMs</a>
+        </div>
+    </header>
+
+    <!-- 1. Hero Section: Bold Statement & Aesthetic Placeholder -->
+    <main class="max-w-7xl mx-auto">
+        <section class="min-h-[85vh] flex flex-col justify-center items-center text-center p-4 sm:p-8 lg:p-12">
+            
+            <!-- Main Headline - Large and Impactful (Gen Z tone) -->
+            <h1 class="text-6xl sm:text-8xl lg:text-[10rem] font-black tracking-tightest mb-6 leading-none">
+                <span class="block text-cz-accent">YOUR VISION.</span>
+                <span class="block mt-4">BUT MAKE IT ICONIC.</span>
+            </h1>
+
+            <!-- Sub Headline (Gen Z tone) -->
+            <p class="max-w-3xl text-xl sm:text-2xl font-light text-cz-light/80 mb-12">
+                We sell the charismatic glasses. The frames are the whole VIBE.
+            </p>
+
+            <!-- Aesthetic Image Placeholder (High-contrast, accent color theme) -->
+            <div class="relative w-full max-w-4xl h-72 sm:h-96 rounded-xl overflow-hidden border-4 border-cz-accent/50">
+                <img src="https://placehold.co/1000x400/111827/08A0F7?text=VUE+ET+HISTOIRE+AESTHETIC" 
+                     alt="Placeholder image for new eyewear collection campaign" 
+                     class="w-full h-full object-cover opacity-80 hover:opacity-100 transition duration-500"/>
+                <div class="absolute inset-0 bg-cz-dark/40 flex items-center justify-center">
+                    <span class="text-lg tracking-widest uppercase text-cz-accent font-bold">THE DROP IS IMMINENT</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Core Vision Section: Identity & Charisma (Gen Z tone) -->
+        <section id="vision" class="py-20 px-4 sm:px-6 lg:px-8 bg-cz-dark/80">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- Text Block -->
+                <div class="lg:pr-12">
+                    <h2 class="text-4xl sm:text-5xl font-black mb-4 text-cz-accent uppercase tracking-tighter">
+                        The Vibe Check is In.
+                    </h2>
+                    <p class="text-xl mb-6 text-cz-light/70">
+                        Glasses aren't just an accessory—they're the main character energy. Our frames are hand-picked to amplify your inherent charisma and turn every outfit into a moment.
+                    </p>
+                    <p class="text-xl text-cz-accent border-l-4 border-cz-accent/80 pl-4 font-extrabold italic">
+                        "VUE ET HISTOIRE frames are built for those who set the trends. We sell MAIN CHARACTER ENERGY and ICONIC LOOKS."
+                    </p>
+                </div>
+
+                <!-- Secondary Aesthetic Image Placeholder -->
+                <div class="relative w-full h-96 rounded-xl overflow-hidden border-4 border-cz-light/20">
+                    <img src="https://placehold.co/800x600/111827/f9fafb?text=ICONIC+LOOKS+ONLY" 
+                         alt="Placeholder image of model with glasses, high-contrast aesthetic" 
+                         class="w-full h-full object-cover transition duration-500 hover:scale-[1.05]"/>
+                    <div class="absolute bottom-4 left-4 text-base tracking-widest uppercase text-cz-light/90 font-semibold">
+                        Certified Fire.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Pre-Launch CTA / Newsletter Signup (Gen Z tone) -->
+        <section id="contact" class="py-24 px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-5xl sm:text-6xl font-black mb-4 tracking-tight">
+                Don't Miss The Drop.
+            </h2>
+            <p class="max-w-2xl mx-auto text-xl text-cz-light/70 mb-8">
+                The launch is loading... Get early access, exclusive style sneak peeks, and discounts before anyone else.
+            </p>
+            
+            <!-- FORM NOW HANDLED BY JAVASCRIPT -->
+            <form class="max-w-md mx-auto flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <input type="email" placeholder="Your best email address, obvi" required
+                       class="flex-grow p-4 bg-cz-dark/50 border border-cz-accent/50 rounded-full text-cz-light focus:border-cz-accent focus:ring-cz-accent transition duration-300 placeholder-cz-light/50">
+                <button type="submit" class="cta-button">
+                    DROP MY EMAIL
+                </button>
+            </form>
+
+            <p class="mt-6 text-sm text-cz-light/50">
+                Low-key promise: zero spam, only fire content.
+            </p>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-cz-dark/90 border-t-4 border-cz-accent/40 py-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center text-sm text-cz-light/60">
+            <p>&copy; 2025 VUE ET HISTOIRE. Let's make history.</p>
+            <div class="flex space-x-6 mt-4 sm:mt-0">
+                <!-- Updated with the actual Instagram link -->
+                <a href="https://www.instagram.com/vue.et.histoire?igsh=N2FlNnZxN2o5ODl5" target="_blank" class="hover:text-cz-accent transition duration-300 font-bold tracking-wider">INSTAGRAM (Where the magic happens)</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Simple JavaScript for Mobile Menu Toggle (Aesthetic Detail) -->
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
+
+</body>
+</html>
