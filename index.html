@@ -14,8 +14,8 @@
             theme: {
                 extend: {
                     colors: {
-                        'cz-dark': '#111827', // Slate/Charcoal dark background (Kept)
-                        'cz-light': '#f9fafb', // Near white text (Kept)
+                        'cz-dark': '#111827', // Slate/Charcoal dark background
+                        'cz-light': '#f9fafb', // Near white text
                         'cz-accent': '#08A0F7', // Deep Sapphire Blue (NEW CHARISMATIC COLOR)
                     },
                     fontFamily: {
@@ -60,7 +60,7 @@
             background-color: #08A0F7; /* New Accent Color */
             color: #111827;
             font-weight: 700;
-            border-radius: 9999px; /* Pill shape (Kept) */
+            border-radius: 9999px; /* Pill shape */
             padding: 1rem 2rem;
             transition: all 0.2s ease-in-out;
             box-shadow: 0 4px 20px rgba(8, 160, 247, 0.4); /* Updated Shadow */
@@ -227,10 +227,22 @@
     <!-- Header / Navigation -->
     <header class="sticky top-0 z-10 bg-cz-dark/90 backdrop-blur-sm shadow-xl shadow-black/20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <!-- Logo / Brand Motto (Updated to the new slogan) -->
-            <div class="text-xl sm:text-2xl font-black tracking-tighter text-cz-accent uppercase header-motto">
-                LE STYLE EST À LA PORTÉE DE TOUS
-            </div>
+            
+            <!-- Logo Implementation (Replaced text motto with image logo) -->
+            <a href="#" class="flex items-center">
+                <!-- 
+                    Logo implemented with path "glasses/logo.png" as requested. 
+                    Fallback uses the new cz-accent color scheme for consistency.
+                -->
+                <img 
+                    id="siteLogo"
+                    src="logo.png" 
+                    alt="VUE ET HISTOIRE Logo" 
+                    class="h-10 w-auto rounded-md"
+                    onerror="this.onerror=null; this.src='https://placehold.co/120x40/08A0F7/111827?text=VUE+LOGO'; this.classList.add('p-1', 'bg-cz-accent', 'text-cz-dark', 'font-bold', 'rounded-lg', 'text-xs');"
+                >
+            </a>
+            
             <!-- Navigation Links (Hidden on small screens, minimalist design) -->
             <nav class="hidden md:flex space-x-8 text-sm font-semibold">
                 <a href="#vision" class="nav-link hover:text-cz-accent">The Vibe</a>
@@ -268,8 +280,8 @@
             <!-- Aesthetic Image Placeholder (High-contrast, accent color theme) -->
             <div class="relative w-full max-w-4xl h-72 sm:h-96 rounded-xl overflow-hidden border-4 border-cz-accent/50">
                 <img src="https://placehold.co/1000x400/111827/08A0F7?text=VUE+ET+HISTOIRE+AESTHETIC" 
-                     alt="Placeholder image for new eyewear collection campaign" 
-                     class="w-full h-full object-cover opacity-80 hover:opacity-100 transition duration-500"/>
+                    alt="Placeholder image for new eyewear collection campaign" 
+                    class="w-full h-full object-cover opacity-80 hover:opacity-100 transition duration-500"/>
                 <div class="absolute inset-0 bg-cz-dark/40 flex items-center justify-center">
                     <span class="text-lg tracking-widest uppercase text-cz-accent font-bold">THE DROP IS IMMINENT</span>
                 </div>
@@ -295,8 +307,8 @@
                 <!-- Secondary Aesthetic Image Placeholder -->
                 <div class="relative w-full h-96 rounded-xl overflow-hidden border-4 border-cz-light/20">
                     <img src="https://placehold.co/800x600/111827/f9fafb?text=ICONIC+LOOKS+ONLY" 
-                         alt="Placeholder image of model with glasses, high-contrast aesthetic" 
-                         class="w-full h-full object-cover transition duration-500 hover:scale-[1.05]"/>
+                        alt="Placeholder image of model with glasses, high-contrast aesthetic" 
+                        class="w-full h-full object-cover transition duration-500 hover:scale-[1.05]"/>
                     <div class="absolute bottom-4 left-4 text-base tracking-widest uppercase text-cz-light/90 font-semibold">
                         Certified Fire.
                     </div>
@@ -316,7 +328,7 @@
             <!-- FORM NOW HANDLED BY JAVASCRIPT -->
             <form class="max-w-md mx-auto flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <input type="email" placeholder="Your best email address, obvi" required
-                       class="flex-grow p-4 bg-cz-dark/50 border border-cz-accent/50 rounded-full text-cz-light focus:border-cz-accent focus:ring-cz-accent transition duration-300 placeholder-cz-light/50">
+                        class="flex-grow p-4 bg-cz-dark/50 border border-cz-accent/50 rounded-full text-cz-light focus:border-cz-accent focus:ring-cz-accent transition duration-300 placeholder-cz-light/50">
                 <button type="submit" class="cta-button">
                     DROP MY EMAIL
                 </button>
